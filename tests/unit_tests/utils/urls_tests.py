@@ -86,3 +86,12 @@ def test_get_url_path_preserves_query_params(app_context: None) -> None:
         test_url
         == "http://localhost:9000/static/assets/images/favicon.png?standalone=1&form_data=%7B%22slice_id%22:+76%7D"
     )
+
+
+def test_modify_url_query_preserves_repeated_existing_parameters() -> None:
+    test_url = modify_url_query(
+        "http://localhost:9000/explore/?filter=a&filter=b",
+        standalone="1",
+    )
+
+    assert test_url == "http://localhost:9000/explore/?filter=a&filter=b&standalone=1"
