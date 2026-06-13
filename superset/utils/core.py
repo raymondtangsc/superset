@@ -61,11 +61,11 @@ from typing import (
 )
 from urllib.parse import unquote_plus, urlparse
 from zipfile import ZipFile
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import markdown as md
 import nh3
 import pandas as pd
-import pytz
 import sqlalchemy as sa
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import Certificate, load_pem_x509_certificate
@@ -2062,7 +2062,7 @@ def normalize_dttm_col(
 
         if _col.timezone:
             try:
-                tz = pytz.timezone(_col.timezone)
+                tz = ZoneInfo(_col.timezone)
                 # Data is stored in UTC, convert to the dataset's configured timezone
                 # First make the datetime UTC-aware, then convert to target timezone
                 series = df[_col.col_label]
@@ -2073,7 +2073,7 @@ def normalize_dttm_col(
                         .dt.tz_convert(tz)
                         .dt.tz_localize(None)  # Remove timezone info for display
                     )
-            except pytz.UnknownTimeZoneError:
+            except ZoneInfoNotFoundError:
                 logging.warning(
                     "Unknown timezone '%s', falling back to offset", _col.timezone
                 )
