@@ -130,7 +130,6 @@ export function OAuth2RedirectMessage({
       if (tabId !== extra.tab_id || handled) {
         return;
       }
-      handled = true;
       const {
         source: src,
         query: q,
@@ -138,13 +137,20 @@ export function OAuth2RedirectMessage({
         chartList: cList,
         dashboardId: dId,
       } = latestStateRef.current;
+      // Only flip `handled` once a dispatch actually runs so a later fallback
+      // signal can still succeed if the first arrived before state was ready
+      // (e.g. `query` still null in SQL Lab).
       if (src === 'sqllab' && q) {
+        handled = true;
         dispatch(reRunQuery(q));
       } else if (src === 'explore') {
+        handled = true;
         dispatch(triggerQuery(true, cId));
       } else if (src === 'dashboard') {
+        handled = true;
         dispatch(onRefresh(cList.map(Number), true, 0, dId));
       } else if (src === 'crud') {
+        handled = true;
         dispatch(
           api.util.invalidateTags([
             { type: 'Schemas', id: 'LIST' },
