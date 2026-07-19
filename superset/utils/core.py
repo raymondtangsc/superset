@@ -977,7 +977,7 @@ def send_mime_email(
         try:
             smtp.quit()
         except smtplib.SMTPException:
-            pass
+            logger.debug("Error while closing SMTP connection", exc_info=True)
 
 
 def recipients_string_to_list(address_string: str | None) -> list[str]:
