@@ -16,4 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-export type { TagType } from 'src/components/Tag/TagType';
+import { tn } from '@apache-superset/core/translation';
+
+interface ChartEditorsAssistanceProps {
+  editors?: string[];
+  visible?: boolean;
+}
+
+export function ChartEditorsAssistance({
+  editors,
+  visible,
+}: ChartEditorsAssistanceProps) {
+  if (!visible || !editors) {
+    return null;
+  }
+  return (
+    <>
+      <br />
+      <p>
+        {tn(
+          'Please reach out to the Chart Editor for assistance.',
+          'Please reach out to the Chart Editors for assistance.',
+          editors.length,
+        )}
+      </p>
+      <p>
+        {tn(
+          'Chart Editor: %s',
+          'Chart Editors: %s',
+          editors.length,
+          editors.join(', '),
+        )}
+      </p>
+    </>
+  );
+}
