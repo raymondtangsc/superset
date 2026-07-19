@@ -168,7 +168,11 @@ def set_app_error_handlers(app: Flask) -> None:  # noqa: C901
             try:
                 return send_file(path, max_age=0), ex.code
             except FileNotFoundError:
-                pass
+                logger.warning(
+                    "Static error page %s not found; falling back to JSON response. "
+                    "Have the frontend assets been built?",
+                    path,
+                )
 
         return json_error_response(
             [
@@ -196,7 +200,11 @@ def set_app_error_handlers(app: Flask) -> None:  # noqa: C901
             try:
                 return send_file(path, max_age=0), 500
             except FileNotFoundError:
-                pass
+                logger.warning(
+                    "Static error page %s not found; falling back to JSON response. "
+                    "Have the frontend assets been built?",
+                    path,
+                )
 
         extra = ex.normalized_messages() if isinstance(ex, CommandInvalidError) else {}
         return json_error_response(
