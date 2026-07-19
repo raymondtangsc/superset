@@ -22,6 +22,7 @@ import { t, tn } from '@apache-superset/core/translation';
 import type { ErrorMessageComponentProps } from './types';
 import { IssueCode } from './IssueCode';
 import { ErrorAlert } from './ErrorAlert';
+import { ChartEditorsAssistance } from './ChartEditorsAssistance';
 
 interface TimeoutErrorExtra {
   issue_codes: {
@@ -66,26 +67,10 @@ export function TimeoutErrorMessage({
           .map<ReactNode>(issueCode => <IssueCode {...issueCode} />)
           .reduce((prev, curr) => [prev, <br />, curr])}
       </p>
-      {isVisualization && extra.editors && (
-        <>
-          <br />
-          <p>
-            {tn(
-              'Please reach out to the Chart Editor for assistance.',
-              'Please reach out to the Chart Editors for assistance.',
-              extra.editors.length,
-            )}
-          </p>
-          <p>
-            {tn(
-              'Chart Editor: %s',
-              'Chart Editors: %s',
-              extra.editors.length,
-              extra.editors.join(', '),
-            )}
-          </p>
-        </>
-      )}
+      <ChartEditorsAssistance
+        visible={isVisualization}
+        editors={extra.editors}
+      />
     </>
   );
 
