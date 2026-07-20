@@ -26,7 +26,8 @@ from superset.tags.models import get_or_create_tag, Tag, TaggedObject, TagType
 
 def test_get_tag_returns_plain_string_not_markup() -> None:
     """
-    Test that get_or_create_tag() returns a Tag with a plain string name, not a Markup object.
+    Test that get_or_create_tag() returns a Tag with a plain string name, not a
+    Markup object.
 
     This verifies the fix for issue #32484 where escape() was wrapping tag names
     in Markup objects, causing MySQL driver errors.
@@ -117,7 +118,7 @@ def test_get_tag_with_html_characters() -> None:
 
 
 def test_get_tag_strips_whitespace() -> None:
-    """Test that get_or_create_tag() strips leading and trailing whitespace from tag names."""
+    """get_or_create_tag() strips leading and trailing whitespace from tag names."""
     mock_session = MagicMock(spec=Session)
     mock_query = MagicMock()
     mock_session.query.return_value = mock_query
@@ -170,7 +171,7 @@ def test_get_tag_returns_existing_tag() -> None:
 
 
 def test_get_tag_creates_new_tag() -> None:
-    """Test that get_or_create_tag() creates and commits a new tag when it doesn't exist."""
+    """get_or_create_tag() creates and commits a new tag when it doesn't exist."""
     mock_session = MagicMock(spec=Session)
     mock_query = MagicMock()
     mock_session.query.return_value = mock_query
