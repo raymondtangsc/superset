@@ -36,8 +36,17 @@ const mockedProps = {
   },
 };
 
-const TestLanguagePicker = ({ locale, languages }: typeof mockedProps) => {
-  const languageMenuItem = useLanguageMenuItems({ locale, languages });
+const TestLanguagePicker = ({
+  locale,
+  languages,
+}: {
+  locale: string;
+  languages: typeof mockedProps.languages;
+}) => {
+  const languageMenuItem = useLanguageMenuItems({
+    locale,
+    languages,
+  });
 
   return (
     <Menu aria-label="Languages" items={[languageMenuItem]} mode="horizontal" />

@@ -26,6 +26,8 @@ import { theme as antdThemeImport } from 'antd';
 import type { ThemeConfig } from 'antd';
 import { Theme } from '.';
 
+export type TextDirection = 'ltr' | 'rtl';
+
 /**
  * Grab all antd tokens via getDesignToken(...).
  * (Same as in the original file.)
@@ -146,6 +148,9 @@ export interface SupersetSpecificTokens {
   brandLogoMargin: string;
   brandLogoHref: string;
   brandLogoHeight: string;
+
+  // Direction-related
+  direction?: TextDirection;
 
   // Spinner-related
   brandSpinnerUrl?: string;
@@ -534,6 +539,7 @@ export interface ThemeContextType {
   themeMode: ThemeMode;
   setTheme: (config: AnyThemeConfig) => void;
   setThemeMode: (newMode: ThemeMode) => void;
+  setDirection: (newDirection: TextDirection) => void;
   resetTheme: () => void;
   setTemporaryTheme: (config: AnyThemeConfig, themeId?: number | null) => void;
   clearLocalOverrides: () => void;
