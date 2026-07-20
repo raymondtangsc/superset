@@ -36,7 +36,7 @@ from sqlalchemy.sql import sqltypes
 from superset.db_engine_specs.base import BaseEngineSpec, convert_inspector_columns
 from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
 from superset.exceptions import OAuth2RedirectError
-from superset.sql.parse import Table
+from superset.sql.parse import RLSMethod, Table
 from superset.superset_typing import (
     OAuth2ClientConfig,
     OAuth2State,
@@ -1360,3 +1360,8 @@ def test_resolve_column_type_falls_back_to_pa_mapped() -> None:
 def test_resolve_column_type_returns_none_when_both_absent() -> None:
     """None is returned when neither source provides a type."""
     assert BaseEngineSpec.resolve_column_type(None, None) is None
+
+
+def test_default_rls_method_is_subquery() -> None:
+    """Base engine spec defaults to subquery-based RLS."""
+    assert BaseEngineSpec.rls_method == RLSMethod.AS_SUBQUERY
