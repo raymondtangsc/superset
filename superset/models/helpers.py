@@ -1784,7 +1784,14 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         """
         labels = self._collect_dttm_labels(query_object)
 
-        dataset_timezone = self.get_dataset_timezone()
+        # ``get_dataset_timezone`` is provided by ExploreMixin, but normalize_df
+        # is also exercised against partial datasources that only bind a subset
+        # of methods, so read it defensively (mirrors the ``get_column`` handling
+        # in ``_collect_dttm_labels``).
+        get_dataset_timezone = getattr(self, "get_dataset_timezone", None)
+        dataset_timezone = (
+            get_dataset_timezone() if callable(get_dataset_timezone) else None
+        )
         dttm_cols = [
             DateColumn(
                 timestamp_format=fmt,
