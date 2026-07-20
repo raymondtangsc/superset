@@ -3174,29 +3174,24 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
 
         return f"""'{dttm.strftime("%Y-%m-%d %H:%M:%S.%f")}'"""
 
-    def get_time_filter(  # pylint: disable=too-many-arguments
+    def _adjust_time_filter_boundaries(
         self,
-        time_col: "TableColumn",
         start_dttm: Optional[sa.DateTime],
         end_dttm: Optional[sa.DateTime],
-        time_grain: Optional[str] = None,
-        label: Optional[str] = "__time",
-        template_processor: Optional[BaseTemplateProcessor] = None,
-    ) -> Optional[ColumnElement]:
-        col = (
-            time_col.get_timestamp_expression(
-                time_grain=time_grain,
-                label=label,
-                template_processor=template_processor,
-            )
-            if time_grain
-            else self.convert_tbl_column_to_sqla_col(
-                time_col, label=label, template_processor=template_processor
-            )
-        )
+    ) -> tuple[Optional[sa.DateTime], Optional[sa.DateTime]]:
+        """
+        Convert naive UI time-filter boundaries to the stored representation.
 
-        # Apply timezone conversion for time filter boundaries
-        # This converts user's local time boundaries to UTC for querying UTC-stored data
+        When the dataset declares an IANA timezone (``extra.timezone``), the
+        naive boundaries from the UI are interpreted in that timezone and
+        converted to UTC for comparison with UTC-stored data. When no timezone
+        is configured, fall back to the dataset "Hour Offset": result
+        timestamps are displayed shifted by +offset hours (see normalize_df /
+        DateColumn in superset.utils.core), but the time filter compares the raw
+        stored values, so shifting the bounds by -offset keeps the filter
+        consistent with what is displayed; otherwise a date selection lands on
+        the wrong calendar day (#104810).
+        """
         adjusted_start, adjusted_end = start_dttm, end_dttm
         dataset_timezone = self.get_dataset_timezone()
 
@@ -3223,17 +3218,37 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                     dataset_timezone,
                 )
         elif offset_hours := getattr(self, "offset", 0) or 0:
-            # Fall back to the dataset "Hour Offset" when no timezone is
-            # configured. Result timestamps are displayed shifted by +offset
-            # hours (see normalize_df / DateColumn in superset.utils.core), but
-            # the time filter compares the raw stored values. Shifting the
-            # filter bounds by -offset keeps the filter consistent with what is
-            # displayed; otherwise a date selection lands on the wrong calendar
-            # day (#104810).
             if start_dttm is not None:
                 adjusted_start = start_dttm - timedelta(hours=offset_hours)
             if end_dttm is not None:
                 adjusted_end = end_dttm - timedelta(hours=offset_hours)
+
+        return adjusted_start, adjusted_end
+
+    def get_time_filter(  # pylint: disable=too-many-arguments
+        self,
+        time_col: "TableColumn",
+        start_dttm: Optional[sa.DateTime],
+        end_dttm: Optional[sa.DateTime],
+        time_grain: Optional[str] = None,
+        label: Optional[str] = "__time",
+        template_processor: Optional[BaseTemplateProcessor] = None,
+    ) -> Optional[ColumnElement]:
+        col = (
+            time_col.get_timestamp_expression(
+                time_grain=time_grain,
+                label=label,
+                template_processor=template_processor,
+            )
+            if time_grain
+            else self.convert_tbl_column_to_sqla_col(
+                time_col, label=label, template_processor=template_processor
+            )
+        )
+
+        adjusted_start, adjusted_end = self._adjust_time_filter_boundaries(
+            start_dttm, end_dttm
+        )
 
         l = []  # noqa: E741
         if adjusted_start:
