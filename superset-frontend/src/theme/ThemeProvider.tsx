@@ -24,10 +24,10 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { TextDirection } from '@apache-superset/core/theme';
 import {
   type AnyThemeConfig,
   type ThemeContextType,
+  type TextDirection,
   Theme,
   ThemeMode,
 } from '@apache-superset/core/theme';

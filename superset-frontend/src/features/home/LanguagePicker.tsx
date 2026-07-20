@@ -55,8 +55,8 @@ const StyledLabel = styled.div`
 export const useLanguageMenuItems = ({
   locale,
   languages,
-}: LanguagePickerProps): MenuItem => {
-  return useMemo(() => {
+}: LanguagePickerProps): MenuItem =>
+  useMemo(() => {
     const items: MenuItem[] = Object.keys(languages).map(langKey => ({
       key: langKey,
       label: (
@@ -84,4 +84,3 @@ export const useLanguageMenuItems = ({
       popupClassName: 'language-picker-popup',
     };
   }, [languages, locale]);
-};
