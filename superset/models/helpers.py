@@ -40,6 +40,7 @@ from typing import (
     TypedDict,
     Union,
 )
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import dateutil.parser
 import humanize
@@ -1267,6 +1268,20 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
     def get_template_processor(self, **kwargs: Any) -> BaseTemplateProcessor:
         raise NotImplementedError()
 
+    def get_dataset_timezone(self) -> str | None:
+        """
+        Get the timezone configured for this dataset from the extra JSON field.
+
+        Returns an IANA timezone name (e.g., "Europe/Berlin", "America/New_York")
+        or None if not configured.
+
+        ``extra_dict`` is provided by concrete datasources (e.g. ``SqlaTable``)
+        rather than this mixin, so read it defensively: subclasses without it
+        simply have no configured timezone.
+        """
+        extra = getattr(self, "extra_dict", None) or {}
+        return extra.get("timezone")
+
     def get_fetch_values_predicate(
         self,
         template_processor: Optional[  # pylint: disable=unused-argument
@@ -1769,11 +1784,20 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         """
         labels = self._collect_dttm_labels(query_object)
 
+        # ``get_dataset_timezone`` is provided by ExploreMixin, but normalize_df
+        # is also exercised against partial datasources that only bind a subset
+        # of methods, so read it defensively (mirrors the ``get_column`` handling
+        # in ``_collect_dttm_labels``).
+        get_dataset_timezone = getattr(self, "get_dataset_timezone", None)
+        dataset_timezone = (
+            get_dataset_timezone() if callable(get_dataset_timezone) else None
+        )
         dttm_cols = [
             DateColumn(
                 timestamp_format=fmt,
                 offset=self.offset,
                 time_shift=query_object.time_shift,
+                timezone=dataset_timezone,
                 col_label=label,
             )
             for label, fmt in labels
@@ -1785,6 +1809,7 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                     timestamp_format=self._python_date_format(query_object.granularity),
                     offset=self.offset,
                     time_shift=query_object.time_shift,
+                    timezone=dataset_timezone,
                 )
             )
 
@@ -3156,6 +3181,57 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
 
         return f"""'{dttm.strftime("%Y-%m-%d %H:%M:%S.%f")}'"""
 
+    def _adjust_time_filter_boundaries(
+        self,
+        start_dttm: Optional[sa.DateTime],
+        end_dttm: Optional[sa.DateTime],
+    ) -> tuple[Optional[sa.DateTime], Optional[sa.DateTime]]:
+        """
+        Convert naive UI time-filter boundaries to the stored representation.
+
+        When the dataset declares an IANA timezone (``extra.timezone``), the
+        naive boundaries from the UI are interpreted in that timezone and
+        converted to UTC for comparison with UTC-stored data. When no timezone
+        is configured, fall back to the dataset "Hour Offset": result
+        timestamps are displayed shifted by +offset hours (see normalize_df /
+        DateColumn in superset.utils.core), but the time filter compares the raw
+        stored values, so shifting the bounds by -offset keeps the filter
+        consistent with what is displayed; otherwise a date selection lands on
+        the wrong calendar day (#104810).
+        """
+        adjusted_start, adjusted_end = start_dttm, end_dttm
+        dataset_timezone = self.get_dataset_timezone()
+
+        if dataset_timezone and (start_dttm or end_dttm):
+            try:
+                tz = ZoneInfo(dataset_timezone)
+
+                # The datetimes from the UI are naive (no timezone info)
+                # We interpret them as being in the dataset's configured timezone
+                # and convert them to UTC for comparison with UTC-stored data
+                if start_dttm:
+                    local_start = start_dttm.replace(tzinfo=tz)
+                    adjusted_start = local_start.astimezone(timezone.utc).replace(
+                        tzinfo=None
+                    )
+                if end_dttm:
+                    local_end = end_dttm.replace(tzinfo=tz)
+                    adjusted_end = local_end.astimezone(timezone.utc).replace(
+                        tzinfo=None
+                    )
+            except ZoneInfoNotFoundError:
+                logger.warning(
+                    "Invalid timezone '%s' in dataset extra",
+                    dataset_timezone,
+                )
+        elif offset_hours := getattr(self, "offset", 0) or 0:
+            if start_dttm is not None:
+                adjusted_start = start_dttm - timedelta(hours=offset_hours)
+            if end_dttm is not None:
+                adjusted_end = end_dttm - timedelta(hours=offset_hours)
+
+        return adjusted_start, adjusted_end
+
     def get_time_filter(  # pylint: disable=too-many-arguments
         self,
         time_col: "TableColumn",
@@ -3177,30 +3253,23 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
             )
         )
 
-        # Honor the dataset "Hour Offset". Result timestamps are displayed shifted
-        # by +offset hours (see normalize_df / DateColumn in superset.utils.core),
-        # but the time filter compares the raw stored values. Shifting the filter
-        # bounds by -offset keeps the filter consistent with what is displayed;
-        # otherwise a date selection lands on the wrong calendar day (#104810).
-        if offset_hours := getattr(self, "offset", 0) or 0:
-            if start_dttm is not None:
-                start_dttm = start_dttm - timedelta(hours=offset_hours)
-            if end_dttm is not None:
-                end_dttm = end_dttm - timedelta(hours=offset_hours)
+        adjusted_start, adjusted_end = self._adjust_time_filter_boundaries(
+            start_dttm, end_dttm
+        )
 
         l = []  # noqa: E741
-        if start_dttm:
+        if adjusted_start:
             l.append(
                 col
                 >= self.db_engine_spec.get_text_clause(
-                    self.dttm_sql_literal(start_dttm, time_col)
+                    self.dttm_sql_literal(adjusted_start, time_col)
                 )
             )
-        if end_dttm:
+        if adjusted_end:
             l.append(
                 col
                 < self.db_engine_spec.get_text_clause(
-                    self.dttm_sql_literal(end_dttm, time_col)
+                    self.dttm_sql_literal(adjusted_end, time_col)
                 )
             )
         if not l:
