@@ -139,7 +139,7 @@ export const PageHeaderWithActions = memo(
         <div className="title-panel">
           <DynamicEditableTitle {...editableTitleProps} />
           {showTitlePanelItems && (
-            <div css={buttonsStyles}>
+            <div css={buttonsStyles(theme)}>
               {certificatiedBadgeProps?.certifiedBy && (
                 <CertifiedBadge {...certificatiedBadgeProps} />
               )}
@@ -150,8 +150,8 @@ export const PageHeaderWithActions = memo(
         </div>
         <div className="right-button-panel">
           {rightPanelAdditionalItems}
-          <div css={additionalActionsContainerStyles}>
-            {showMenuDropdown && (
+          {showMenuDropdown && (
+            <div css={additionalActionsContainerStyles(theme)}>
               <Dropdown
                 trigger={['click']}
                 popupRender={() => additionalActionsMenu}
@@ -173,8 +173,8 @@ export const PageHeaderWithActions = memo(
                   </Button>
                 </span>
               </Dropdown>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );

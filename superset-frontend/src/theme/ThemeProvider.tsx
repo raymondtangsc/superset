@@ -24,7 +24,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import {} from '@superset-ui/core';
+import type { TextDirection } from '@apache-superset/core/theme';
 import {
   type AnyThemeConfig,
   type ThemeContextType,
@@ -81,6 +81,11 @@ export function SupersetThemeProvider({
 
   const setThemeMode = useCallback(
     (newMode: ThemeMode) => themeController.setThemeMode(newMode),
+    [themeController],
+  );
+
+  const setDirection = useCallback(
+    (direction: TextDirection) => themeController.setDirection(direction),
     [themeController],
   );
 
@@ -143,6 +148,7 @@ export function SupersetThemeProvider({
       themeMode: currentThemeMode,
       setTheme,
       setThemeMode,
+      setDirection,
       resetTheme,
       setTemporaryTheme,
       clearLocalOverrides,
@@ -160,6 +166,7 @@ export function SupersetThemeProvider({
       currentThemeMode,
       setTheme,
       setThemeMode,
+      setDirection,
       resetTheme,
       setTemporaryTheme,
       clearLocalOverrides,

@@ -20,7 +20,6 @@ import { Menu } from '@superset-ui/core/components/Menu';
 import { useLanguageMenuItems } from './LanguagePicker';
 import type { Languages } from './LanguagePicker';
 
-// Component to demonstrate the hook usage
 const LanguagePicker = ({
   locale,
   languages,
@@ -28,7 +27,10 @@ const LanguagePicker = ({
   locale: string;
   languages: Languages;
 }) => {
-  const languageMenuItem = useLanguageMenuItems({ locale, languages });
+  const languageMenuItem = useLanguageMenuItems({
+    locale,
+    languages,
+  });
 
   return (
     <Menu aria-label="Languages" items={[languageMenuItem]} mode="horizontal" />
@@ -64,7 +66,7 @@ const mockedProps = {
   },
 };
 
-const Template = (args: any) => <LanguagePicker {...args} />;
+const Template = (args: typeof mockedProps) => <LanguagePicker {...args} />;
 
 export const Default = Template.bind({});
 Default.args = mockedProps;

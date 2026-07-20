@@ -1016,3 +1016,32 @@ test('dark mode actually diverges from light mode for background tokens', () => 
   expect(dark.theme.colorBgBase).not.toBe(light.theme.colorBgBase);
   expect(dark.theme.colorTextBase).not.toBe(light.theme.colorTextBase);
 });
+
+test('setDirection persists across setConfig', () => {
+  const theme = Theme.fromConfig({
+    token: {
+      direction: 'ltr',
+    },
+  });
+
+  theme.setDirection('rtl');
+  expect(theme.theme.direction).toBe('rtl');
+
+  theme.setConfig({
+    token: {
+      colorPrimary: '#f759ab',
+      direction: 'ltr',
+    },
+  });
+
+  expect(theme.theme.direction).toBe('rtl');
+});
+
+test('setDirection persists across toggleDarkMode', () => {
+  const theme = Theme.fromConfig();
+
+  theme.setDirection('rtl');
+  theme.toggleDarkMode(true);
+
+  expect(theme.theme.direction).toBe('rtl');
+});
